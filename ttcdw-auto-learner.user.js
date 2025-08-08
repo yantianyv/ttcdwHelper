@@ -52,41 +52,32 @@
                 max-width: 80%;
                 text-align: center;
             }
+            #auto-learner-container {
+                z-index: 99999;
+            }
             #auto-learner-log-panel {
-                position: fixed;
-                bottom: 10px;
-                right: 10px;
-                width: 400px;
-                height: 200px;
                 background: rgba(0,0,0,0.85);
                 color: #fff;
                 font-family: 'Consolas', 'Monaco', monospace;
                 padding: 10px;
                 overflow: auto;
-                z-index: 9999;
                 border-radius: 5px;
                 font-size: 12px;
                 line-height: 1.5;
                 box-shadow: 0 0 10px rgba(0,0,0,0.5);
-                border: 1px solid #444;
+                max-height: 150px;
             }
             #auto-learner-log-toggle {
-                position: fixed;
-                bottom: 10px;
-                right: 420px;
-                padding: 5px 10px;
-                background: #4a4a4a;
+                padding: 5px;
+                background: rgba(0,0,0,0.7);
                 color: #fff;
-                border: none;
-                border-radius: 3px;
+                border-radius: 5px;
                 cursor: pointer;
-                z-index: 9999;
-                font-family: Arial, sans-serif;
-                font-size: 12px;
+                text-align: center;
                 transition: all 0.2s ease;
             }
             #auto-learner-log-toggle:hover {
-                background: #5a5a5a;
+                background: rgba(0,0,0,0.8);
             }
             #auto-learner-log-panel::-webkit-scrollbar {
                 width: 6px;
@@ -117,76 +108,11 @@
         return alertDiv;
     };
 
-    // 创建日志面板
+    // 创建日志面板 (样式已在showAlert函数中定义)
     const createLogPanel = () => {
-        const panel = document.createElement('div');
+        const panel = document.getElementById('auto-learner-log-panel') || document.createElement('div');
         panel.id = 'auto-learner-log-panel';
         panel.style.display = 'none';
-
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'auto-learner-log-toggle';
-        toggleBtn.textContent = '显示日志';
-        toggleBtn.onclick = () => {
-            panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
-            toggleBtn.textContent = panel.style.display === 'none' ? '显示日志' : '隐藏日志';
-        };
-
-        // 确保样式应用
-        GM_addStyle(`
-            #auto-learner-log-panel {
-                position: fixed;
-                bottom: 10px;
-                right: 10px;
-                width: 400px;
-                height: 200px;
-                background: rgba(0,0,0,0.85);
-                color: #fff;
-                font-family: 'Consolas', 'Monaco', monospace;
-                padding: 10px;
-                overflow: auto;
-                z-index: 9999;
-                border-radius: 5px;
-                font-size: 12px;
-                line-height: 1.5;
-                box-shadow: 0 0 10px rgba(0,0,0,0.5);
-                border: 1px solid #444;
-            }
-            #auto-learner-log-toggle {
-                position: fixed;
-                bottom: 10px;
-                right: 420px;
-                padding: 5px 10px;
-                background: #4a4a4a;
-                color: #fff;
-                border: none;
-                border-radius: 3px;
-                cursor: pointer;
-                z-index: 9999;
-                font-family: Arial, sans-serif;
-                font-size: 12px;
-                transition: all 0.2s ease;
-            }
-            #auto-learner-log-toggle:hover {
-                background: #5a5a5a;
-            }
-            #auto-learner-log-panel::-webkit-scrollbar {
-                width: 6px;
-            }
-            #auto-learner-log-panel::-webkit-scrollbar-track {
-                background: rgba(255,255,255,0.1);
-                border-radius: 3px;
-            }
-            #auto-learner-log-panel::-webkit-scrollbar-thumb {
-                background: rgba(255,255,255,0.3);
-                border-radius: 3px;
-            }
-            #auto-learner-log-panel::-webkit-scrollbar-thumb:hover {
-                background: rgba(255,255,255,0.4);
-            }
-        `);
-
-        document.body.appendChild(panel);
-        document.body.appendChild(toggleBtn);
         return panel;
     };
 
@@ -314,18 +240,58 @@
                 await waitForElement('.el-table__body');
                 log('课程表格加载完成');
 
-                // 创建动态进度条容器
+                // 创建统一风格的容器
+                const container = document.createElement('div');
+                container.id = 'auto-learner-container';
+                container.style.position = 'fixed';
+                container.style.bottom = '20px';
+                container.style.left = '20px';
+                container.style.zIndex = '99999';
+                container.style.width = '320px';
+                container.style.display = 'flex';
+                container.style.flexDirection = 'column';
+                container.style.gap = '10px';
+                document.body.appendChild(container);
+
+                // 创建日志面板
+                const logPanel = document.createElement('div');
+                logPanel.id = 'auto-learner-log-panel';
+                logPanel.style.backgroundColor = 'rgba(0,0,0,0.85)';
+                logPanel.style.color = '#fff';
+                logPanel.style.padding = '10px';
+                logPanel.style.borderRadius = '5px';
+                logPanel.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+                logPanel.style.maxHeight = '150px';
+                logPanel.style.overflow = 'auto';
+                logPanel.style.fontFamily = 'Consolas, Monaco, monospace';
+                logPanel.style.fontSize = '12px';
+                logPanel.style.lineHeight = '1.5';
+                container.appendChild(logPanel);
+
+                // 创建日志切换按钮
+                const logToggle = document.createElement('div');
+                logToggle.id = 'auto-learner-log-toggle';
+                logToggle.textContent = '隐藏日志 ▲';
+                logToggle.style.cursor = 'pointer';
+                logToggle.style.textAlign = 'center';
+                logToggle.style.padding = '5px';
+                logToggle.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                logToggle.style.color = '#fff';
+                logToggle.style.borderRadius = '5px';
+                logToggle.onclick = () => {
+                    logPanel.style.display = logPanel.style.display === 'none' ? 'block' : 'none';
+                    logToggle.textContent = logPanel.style.display === 'none' ? '显示日志 ▲' : '隐藏日志 ▼';
+                };
+                container.appendChild(logToggle);
+
+                // 创建进度条容器
                 const progressContainer = document.createElement('div');
                 progressContainer.id = 'auto-learner-progress-container';
-                progressContainer.style.position = 'fixed';
-                progressContainer.style.bottom = '20px';
-                progressContainer.style.left = '20px';
-                progressContainer.style.zIndex = '99999';
                 progressContainer.style.backgroundColor = 'rgba(255,255,255,0.9)';
                 progressContainer.style.padding = '10px';
                 progressContainer.style.borderRadius = '5px';
                 progressContainer.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-                document.body.appendChild(progressContainer);
+                container.appendChild(progressContainer);
 
                 // 添加初始等待和提示
                 showAlert('脚本将在5秒后开始处理课程', 'info');
@@ -347,7 +313,7 @@
                     const courseName = course.querySelector('.course-name')?.textContent || '未知课程';
                     const duration = course.querySelector('div[data-v-318a99d9]')?.textContent?.trim() || '未知时长';
                     const progress = course.querySelector('.el-progress__text')?.textContent || '0%';
-                    
+
                     log(`发现未完成课程: ${courseName}, 时长: ${duration}, 当前进度: ${progress}`);
 
                     // 计算剩余时间
@@ -362,7 +328,7 @@
                         // 创建动态进度条
                         progressContainer.innerHTML = `
                             <div style="margin-bottom: 5px; font-weight: bold;">${courseName}</div>
-                            <div id="remaining-time" style="margin-bottom: 5px;">剩余时间: ${Math.floor(remainingSeconds/60)}分${remainingSeconds%60}秒</div>
+                            <div id="remaining-time" style="margin-bottom: 5px;">剩余时间: ${Math.floor(remainingSeconds / 60)}分${remainingSeconds % 60}秒</div>
                             <div style="width: 300px; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden;">
                                 <div id="progress-bar" style="height: 100%; width: ${progressPercent * 100}%; background: #4CAF50; 
                                     display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">
@@ -376,7 +342,7 @@
                         const remainingTimeEl = document.getElementById('remaining-time');
                         const startTime = Date.now();
                         const endTime = startTime + remainingSeconds * 1000;
-                        
+
                         const updateInterval = setInterval(() => {
                             const now = Date.now();
                             if (now >= endTime) {
@@ -393,7 +359,7 @@
 
                             progressBar.style.width = `${newProgress * 100}%`;
                             progressBar.textContent = `${Math.round(newProgress * 100)}%`;
-                            remainingTimeEl.textContent = `剩余时间: ${Math.floor(newRemaining/60)}分${newRemaining%60}秒`;
+                            remainingTimeEl.textContent = `剩余时间: ${Math.floor(newRemaining / 60)}分${newRemaining % 60}秒`;
                         }, 1000);
                     }
 
@@ -413,9 +379,9 @@
                 const allFinished = allCourses.every(row => {
                     const progressBar = row.querySelector('.el-progress-bar__inner');
                     const progressText = row.querySelector('.el-progress__text');
-                    return progressBar && 
-                           progressBar.style.width === '100%' && 
-                           progressText?.textContent === '100%';
+                    return progressBar &&
+                        progressBar.style.width === '100%' &&
+                        progressText?.textContent === '100%';
                 });
 
                 if (!allFinished) {
