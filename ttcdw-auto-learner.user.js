@@ -316,6 +316,9 @@
 
                     log(`发现未完成课程: ${courseName}, 时长: ${duration}, 当前进度: ${progress}`);
 
+                    // 初始化剩余时间(默认30分钟)
+                    let remainingSeconds = 30 * 60;
+
                     // 计算剩余时间
                     const match = duration.match(/(\d+):(\d+):(\d+)/) || duration.match(/(\d+):(\d+)/);
                     if (match) {
@@ -323,7 +326,7 @@
                             ? parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3])
                             : parseInt(match[1]) * 60 + parseInt(match[2]);
                         const progressPercent = parseInt(progress) / 100;
-                        let remainingSeconds = Math.round(totalSeconds * (1 - progressPercent));
+                        remainingSeconds = Math.round(totalSeconds * (1 - progressPercent));
 
                         // 创建动态进度条
                         progressContainer.innerHTML = `
@@ -367,7 +370,19 @@
                     if (studyBtn) {
                         studyBtn.click();
                         log('已点击学习按钮');
-                        await delay(2000); // 简单等待跳转
+                        
+                        if (remainingSeconds > 0) {
+                            // 等待课程剩余时长
+                            log(`等待课程剩余时长: ${Math.floor(remainingSeconds / 60)}分${remainingSeconds % 60}秒`);
+                            await delay((remainingSeconds + 60) * 1000);
+                            
+                            // 刷新页面
+                            log('课程时长等待完成，刷新页面');
+                            location.reload();
+                        } else {
+                            log('无需等待，立即刷新');
+                            location.reload();
+                        }
                         return;
                     }
                 } else {
@@ -569,6 +584,15 @@
             let currentVideoHandled = false;
             const checkInterval = setInterval(async () => {
                 try {
+                    // 0. 优先检查关闭页面按钮
+                    const closeBtn = await waitForElement('.layui-layer-btn0', 1000).catch(() => null);
+                    if (closeBtn) {
+                        log('检测到关闭页面按钮，点击关闭');
+                        closeBtn.click();
+                        clearInterval(checkInterval);
+                        return;
+                    }
+
                     // 1. 优先检查所有视频是否已完成
                     if (allVideosCompleted()) {
                         log('所有视频已完成，关闭页面');
