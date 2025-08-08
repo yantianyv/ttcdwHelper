@@ -423,48 +423,103 @@
     // 处理视频播放页
     const handleVideoPage = async () => {
         log('开始处理视频播放页...');
+
+        // 创建日志容器
+        const container = document.createElement('div');
+        container.id = 'auto-learner-container';
+        container.style.position = 'fixed';
+        container.style.bottom = '20px';
+        container.style.left = '20px';
+        container.style.zIndex = '99999';
+        container.style.width = '320px';
+        document.body.appendChild(container);
+
+        // 创建日志面板
+        const logPanel = createLogPanel();
+        container.appendChild(logPanel);
+
+        // 创建日志切换按钮
+        const logToggle = document.createElement('div');
+        logToggle.id = 'auto-learner-log-toggle';
+        logToggle.textContent = '隐藏日志 ▲';
+        logToggle.style.cursor = 'pointer';
+        logToggle.style.textAlign = 'center';
+        logToggle.style.padding = '5px';
+        logToggle.style.backgroundColor = 'rgba(0,0,0,0.7)';
+        logToggle.style.color = '#fff';
+        logToggle.style.borderRadius = '5px';
+        logToggle.onclick = () => {
+            logPanel.style.display = logPanel.style.display === 'none' ? 'block' : 'none';
+            logToggle.textContent = logPanel.style.display === 'none' ? '显示日志 ▲' : '隐藏日志 ▼';
+        };
+        container.appendChild(logToggle);
+
         try {
             await waitForElement('#video-Player');
             log('视频播放器加载完成');
 
-            // 检查重播按钮
-            const replayBtn = await waitForElement('.xgplayer-replay', 5000).catch(() => null);
-            if (replayBtn) {
-                log('视频已播放完毕');
+            let errorCount = 0;
+            const maxErrors = 3;
+
+            // 增强型视频结束检测机制
+            const checkInterval = setInterval(async () => {
                 try {
-                    window.close();
-                } catch (e) {
-                    window.history.back();
-                }
-                return;
-            }
-
-            // 获取视频时长
-            const durationText = document.querySelector('.video-title.on .three')?.textContent;
-            if (durationText) {
-                const match = durationText.match(/\((\d+):(\d+):(\d+)/) || durationText.match(/\((\d+):(\d+)/);
-                if (match) {
-                    const totalSeconds = match[3]
-                        ? parseInt(match[1]) * 3600 + parseInt(match[2]) * 60 + parseInt(match[3])
-                        : parseInt(match[1]) * 60 + parseInt(match[2]);
-
-                    log(`视频总时长: ${totalSeconds}秒`);
-                    await delay((totalSeconds + 60) * 1000);
-
-                    log('视频播放完成');
-                    try {
-                        window.close();
-                    } catch (e) {
-                        window.history.back();
+                    // 1. 检查重播按钮
+                    const replayBtn = await waitForElement('.xgplayer-replay', 1000).catch(() => null);
+                    
+                    // 2. 检查播放进度
+                    const progressBar = await waitForElement('.xgplayer-progress-played', 1000).catch(() => null);
+                    const progress = progressBar ? parseFloat(progressBar.style.width) : 0;
+                    
+                    // 3. 检查播放状态
+                    const isPlaying = !document.querySelector('.xgplayer-pause');
+                    
+                    if (replayBtn && progress > 95) {
+                        log('检测到重播按钮且进度>95%，等待10秒后二次确认...');
+                        await delay(10000);
+                        
+                        // 二次确认
+                        const confirmReplayBtn = await waitForElement('.xgplayer-replay', 1000).catch(() => null);
+                        const confirmProgressBar = await waitForElement('.xgplayer-progress-played', 1000).catch(() => null);
+                        const confirmProgress = confirmProgressBar ? parseFloat(confirmProgressBar.style.width) : 0;
+                        
+                        if (confirmReplayBtn && confirmProgress > 95 && !isPlaying) {
+                            clearInterval(checkInterval);
+                            log('视频确认播放完毕，进度: ' + confirmProgress + '%');
+                            try {
+                                window.close();
+                            } catch (e) {
+                                window.history.back();
+                            }
+                        } else {
+                            log('二次确认未通过，继续监测');
+                        }
+                    } else if (!isPlaying && progress < 95) {
+                        // 异常情况：视频暂停但进度不足
+                        log('检测到异常状态：视频暂停但进度不足(' + progress + '%)');
+                        const playBtn = await waitForClickableElement('.xgplayer-play').catch(() => null);
+                        if (playBtn) {
+                            playBtn.click();
+                            log('已尝试恢复播放');
+                        }
                     }
-                    return;
+                    
+                    errorCount = 0; // 重置错误计数
+                } catch (error) {
+                    errorCount++;
+                    log(`检测失败 (${errorCount}/${maxErrors}): ${error.message}`, 'error');
+                    if (errorCount >= maxErrors) {
+                        clearInterval(checkInterval);
+                        showAlert('视频检测失败，即将刷新页面');
+                        await delay(2000);
+                        location.reload();
+                    }
                 }
-            }
+            }, 15000); // 每15秒检测一次
 
-            throw new Error('无法确定视频状态');
         } catch (error) {
-            log(`处理视频页出错: ${error.message}`, 'error');
-            showAlert('处理视频页失败');
+            log(`初始化视频页出错: ${error.message}`, 'error');
+            showAlert('初始化视频页失败');
             await delay(5000);
             location.reload();
         }
