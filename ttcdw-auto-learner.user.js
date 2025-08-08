@@ -294,8 +294,8 @@
                 container.appendChild(progressContainer);
 
                 // 添加初始等待和提示
-                showAlert('脚本将在30秒后开始处理课程', 'info');
-                await delay(30000);
+                showAlert('脚本将在5秒后开始处理课程', 'info');
+                await delay(5000);
 
                 // 检查未完成课程
                 const unfinishedCourses = Array.from(document.querySelectorAll('.el-table__row'))
@@ -592,7 +592,7 @@
                         const currentTime = Date.now();
                         const timeSinceLoad = currentTime - pageLoadTime;
 
-                        if (timeSinceLoad < 5000) { // 30秒内
+                        if (timeSinceLoad < 30000) { // 30秒内
                             log(`页面打开${Math.floor(timeSinceLoad / 1000)}秒内检测到关闭按钮，刷新页面`);
                             location.reload();
                         } else {
