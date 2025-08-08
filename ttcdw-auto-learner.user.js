@@ -327,13 +327,19 @@
                 progressContainer.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
                 document.body.appendChild(progressContainer);
 
+                // 添加初始等待和提示
+                showAlert('脚本将在5秒后开始处理课程', 'info');
+                await delay(5000);
+
                 // 检查未完成课程
                 const unfinishedCourses = Array.from(document.querySelectorAll('.el-table__row'))
                     .filter(row => {
                         const progressBar = row.querySelector('.el-progress-bar__inner');
                         const progressText = row.querySelector('.el-progress__text')?.textContent;
+                        // 正确处理0%进度的情况
                         const isFinished = progressBar && progressBar.style.width === '100%' && progressText === '100%';
-                        return progressBar && !isFinished;
+                        const isUnstarted = progressBar && (!progressText || progressText === '0%');
+                        return progressBar && (!isFinished || isUnstarted);
                     });
 
                 if (unfinishedCourses.length > 0) {
@@ -402,13 +408,20 @@
                     progressContainer.innerHTML = '<div style="color: #4CAF50; font-weight: bold;">所有课程已完成</div>';
                 }
 
-                // 检查当前页是否还有未处理课程
+                // 严格检查当前页所有课程是否完成
                 const allCourses = Array.from(document.querySelectorAll('.el-table__row'));
-                const processed = allCourses.every(row => {
+                const allFinished = allCourses.every(row => {
                     const progressBar = row.querySelector('.el-progress-bar__inner');
                     const progressText = row.querySelector('.el-progress__text');
-                    return progressBar && progressBar.style.width === '100%' && progressText?.textContent === '100%';
+                    return progressBar && 
+                           progressBar.style.width === '100%' && 
+                           progressText?.textContent === '100%';
                 });
+
+                if (!allFinished) {
+                    log('当前页还有未完成课程，不进行翻页');
+                    return;
+                }
 
                 // 检查下一页按钮
                 try {
