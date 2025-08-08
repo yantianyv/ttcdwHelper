@@ -438,6 +438,7 @@
     // 处理视频播放页
     const handleVideoPage = async () => {
         log('开始处理视频播放页...');
+        const pageLoadTime = Date.now(); // 记录页面加载时间
         
         // 新功能：视频进度检测工具函数
         const getCurrentVideoProgress = () => {
@@ -587,8 +588,16 @@
                     // 0. 优先检查关闭页面按钮
                     const closeBtn = await waitForElement('.layui-layer-btn0', 1000).catch(() => null);
                     if (closeBtn) {
-                        log('检测到关闭页面按钮，点击关闭');
-                        closeBtn.click();
+                        const currentTime = Date.now();
+                        const timeSinceLoad = currentTime - pageLoadTime;
+
+                        if (timeSinceLoad < 5000) { // 30秒内
+                            log(`页面打开${Math.floor(timeSinceLoad / 1000)}秒内检测到关闭按钮，刷新页面`);
+                            location.reload();
+                        } else {
+                            log('检测到关闭页面按钮，点击关闭');
+                            closeBtn.click();
+                        }
                         clearInterval(checkInterval);
                         return;
                     }
