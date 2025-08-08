@@ -423,6 +423,110 @@
     // 处理视频播放页
     const handleVideoPage = async () => {
         log('开始处理视频播放页...');
+        
+        // 新功能：视频进度检测工具函数
+        const getCurrentVideoProgress = () => {
+            const currentVideo = document.querySelector('.tab-item.catalog .video-title.on');
+            if (!currentVideo) return null;
+            
+            // 优先使用data-progress属性
+            const progressData = currentVideo.dataset.progress;
+            if (progressData) return parseFloat(progressData);
+            
+            // 备用方案：解析.four元素文本
+            const progressText = currentVideo.querySelector('.four')?.textContent;
+            if (progressText) {
+                const match = progressText.match(/(\d+)%/);
+                return match ? parseInt(match[1]) / 100 : 0;
+            }
+            return 0;
+        };
+
+        const switchToNextVideo = async () => {
+            // 获取当前播放的视频
+            const currentVideo = document.querySelector('.tab-item.catalog .video-title.on');
+            if (!currentVideo) return false;
+            
+            // 获取下一个未完成的视频
+            const allVideos = Array.from(document.querySelectorAll('.tab-item.catalog .video-title'));
+            const currentIndex = allVideos.indexOf(currentVideo);
+            const nextVideo = allVideos.slice(currentIndex + 1).find(video => {
+                const progress = parseFloat(video.dataset.progress || 0);
+                return progress < 1;
+            });
+            
+            if (nextVideo) {
+                // 模拟人类点击行为
+                const videoElement = nextVideo;
+                const rect = videoElement.getBoundingClientRect();
+                
+                // 1. 移动鼠标到元素中心
+                const mouseMoveEvent = new MouseEvent('mousemove', {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2
+                });
+                document.dispatchEvent(mouseMoveEvent);
+                
+                // 2. 短暂延迟模拟人类反应时间
+                await delay(300 + Math.random() * 500);
+                
+                // 3. 鼠标移入元素
+                const mouseOverEvent = new MouseEvent('mouseover', {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2
+                });
+                videoElement.dispatchEvent(mouseOverEvent);
+                
+                // 4. 短暂延迟
+                await delay(100 + Math.random() * 200);
+                
+                // 5. 鼠标按下
+                const mouseDownEvent = new MouseEvent('mousedown', {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2
+                });
+                videoElement.dispatchEvent(mouseDownEvent);
+                
+                // 6. 短暂延迟
+                await delay(50 + Math.random() * 100);
+                
+                // 7. 鼠标抬起
+                const mouseUpEvent = new MouseEvent('mouseup', {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2
+                });
+                videoElement.dispatchEvent(mouseUpEvent);
+                
+                // 8. 点击事件
+                const clickEvent = new MouseEvent('click', {
+                    bubbles: true,
+                    cancelable: true,
+                    clientX: rect.left + rect.width / 2,
+                    clientY: rect.top + rect.height / 2
+                });
+                videoElement.dispatchEvent(clickEvent);
+                
+                log('已模拟人类点击切换到下一个视频: ' + nextVideo.querySelector('.two').textContent);
+                return true;
+            }
+            return false;
+        };
+
+        const allVideosCompleted = () => {
+            const videos = document.querySelectorAll('.tab-item.catalog .video-title');
+            return Array.from(videos).every(video => {
+                const progress = parseFloat(video.dataset.progress || 0);
+                return progress === 1;
+            });
+        };
 
         // 创建日志容器
         const container = document.createElement('div');
@@ -462,30 +566,50 @@
             const maxErrors = 3;
 
             // 增强型视频结束检测机制
+            let currentVideoHandled = false;
             const checkInterval = setInterval(async () => {
                 try {
-                    // 1. 检查重播按钮
+                    // 1. 优先检查所有视频是否已完成
+                    if (allVideosCompleted()) {
+                        log('所有视频已完成，关闭页面');
+                        clearInterval(checkInterval);
+                        window.close();
+                        return;
+                    }
+
+                    // 2. 检查当前视频进度
+                    const videoListProgress = getCurrentVideoProgress();
+                    if (videoListProgress === 1 && !currentVideoHandled) {
+                        if (switchToNextVideo()) {
+                            log('检测到100%视频，已切换到下一个视频');
+                            currentVideoHandled = true;
+                        }
+                    } else if (videoListProgress < 1) {
+                        currentVideoHandled = false; // 重置标记
+                    }
+                    
+                    // 3. 检查重播按钮
                     const replayBtn = await waitForElement('.xgplayer-replay', 1000).catch(() => null);
                     
                     // 2. 检查播放进度
                     const progressBar = await waitForElement('.xgplayer-progress-played', 1000).catch(() => null);
-                    const progress = progressBar ? parseFloat(progressBar.style.width) : 0;
+                    const playbackProgress = progressBar ? parseFloat(progressBar.style.width) : 0;
                     
                     // 3. 检查播放状态
                     const isPlaying = !document.querySelector('.xgplayer-pause');
                     
-                    if (replayBtn && progress > 95) {
+                    if (replayBtn && playbackProgress > 95) {
                         log('检测到重播按钮且进度>95%，等待10秒后二次确认...');
                         await delay(10000);
                         
                         // 二次确认
                         const confirmReplayBtn = await waitForElement('.xgplayer-replay', 1000).catch(() => null);
                         const confirmProgressBar = await waitForElement('.xgplayer-progress-played', 1000).catch(() => null);
-                        const confirmProgress = confirmProgressBar ? parseFloat(confirmProgressBar.style.width) : 0;
+                        const confirmPlaybackProgress = confirmProgressBar ? parseFloat(confirmProgressBar.style.width) : 0;
                         
-                        if (confirmReplayBtn && confirmProgress > 95 && !isPlaying) {
+                        if (confirmReplayBtn && confirmPlaybackProgress > 95 && !isPlaying) {
                             clearInterval(checkInterval);
-                            log('视频确认播放完毕，进度: ' + confirmProgress + '%');
+                            log('视频确认播放完毕，进度: ' + confirmPlaybackProgress + '%');
                             try {
                                 window.close();
                             } catch (e) {
@@ -494,9 +618,9 @@
                         } else {
                             log('二次确认未通过，继续监测');
                         }
-                    } else if (!isPlaying && progress < 95) {
+                    } else if (!isPlaying && playbackProgress < 95) {
                         // 异常情况：视频暂停但进度不足
-                        log('检测到异常状态：视频暂停但进度不足(' + progress + '%)');
+                        log('检测到异常状态：视频暂停但进度不足(' + playbackProgress + '%)');
                         const playBtn = await waitForClickableElement('.xgplayer-play').catch(() => null);
                         if (playBtn) {
                             playBtn.click();
@@ -515,7 +639,7 @@
                         location.reload();
                     }
                 }
-            }, 15000); // 每15秒检测一次
+            }, 1000); // 每秒检测一次
 
         } catch (error) {
             log(`初始化视频页出错: ${error.message}`, 'error');
