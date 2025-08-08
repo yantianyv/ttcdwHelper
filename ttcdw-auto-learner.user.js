@@ -294,8 +294,8 @@
                 container.appendChild(progressContainer);
 
                 // 添加初始等待和提示
-                showAlert('脚本将在5秒后开始处理课程', 'info');
-                await delay(5000);
+                showAlert('脚本将在30秒后开始处理课程', 'info');
+                await delay(30000);
 
                 // 检查未完成课程
                 const unfinishedCourses = Array.from(document.querySelectorAll('.el-table__row'))
@@ -580,6 +580,7 @@
 
             let errorCount = 0;
             const maxErrors = 3;
+            let isMuted = false; // 静音状态标志
 
             // 增强型视频结束检测机制
             let currentVideoHandled = false;
@@ -630,6 +631,16 @@
                     
                     // 3. 检查播放状态
                     const isPlaying = !document.querySelector('.xgplayer-pause');
+
+                    // 自动静音检查
+                    if (!isMuted) {
+                        const muteBtn = await waitForElement('.xgplayer-icon-large', 1000).catch(() => null);
+                        if (muteBtn) {
+                            muteBtn.click();
+                            log('已自动静音');
+                            isMuted = true;
+                        }
+                    }
                     
                     if (replayBtn && playbackProgress > 95) {
                         log('检测到重播按钮且进度>95%，等待10秒后二次确认...');
