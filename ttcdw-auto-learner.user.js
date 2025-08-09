@@ -330,6 +330,28 @@
                     document.body.appendChild(container);
                 }
 
+                // 添加红包按钮
+                let redPacketBtn = document.getElementById('red-packet-btn');
+                if (!redPacketBtn) {
+                    redPacketBtn = document.createElement('div');
+                    redPacketBtn.id = 'red-packet-btn';
+                    redPacketBtn.textContent = '🧧 饿了么天天领红包 🧧';
+                    redPacketBtn.style.cursor = 'pointer';
+                    redPacketBtn.style.textAlign = 'center';
+                    redPacketBtn.style.padding = '10px';
+                    redPacketBtn.style.backgroundColor = 'rgba(22, 119, 255, 1)';
+                    redPacketBtn.style.color = 'hsla(0, 0%, 100%, 1.00)';
+                    redPacketBtn.style.borderRadius = '5px';
+                    redPacketBtn.style.marginBottom = '15px';
+                    redPacketBtn.style.fontWeight = 'bold';
+                    redPacketBtn.style.fontSize = '16px';
+                    redPacketBtn.style.boxShadow = '0 2px 5px rgba(0,0,0,0.2)';
+                    redPacketBtn.onclick = () => {
+                        GM_openInTab('https://h5.ele.me/adminiappsub/pages/h5/index?configKey=BDLM_ELE_H5_DG_TC&scene=59c780f481ff45b096f427b2312ec45a');
+                    };
+                    container.insertBefore(redPacketBtn, container.firstChild); // 放在容器最前面
+                }
+
                 // 使用createLogPanel创建日志面板
                 const logPanel = createLogPanel();
                 if (!logPanel.parentNode) {
