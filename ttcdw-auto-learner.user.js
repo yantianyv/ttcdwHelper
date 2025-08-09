@@ -110,9 +110,12 @@
 
     // 创建日志面板 (样式已在showAlert函数中定义)
     const createLogPanel = () => {
-        const panel = document.getElementById('auto-learner-log-panel') || document.createElement('div');
-        panel.id = 'auto-learner-log-panel';
-        panel.style.display = 'none';
+        let panel = document.getElementById('auto-learner-log-panel');
+        if (!panel) {
+            panel = document.createElement('div');
+            panel.id = 'auto-learner-log-panel';
+            panel.style.display = 'none';
+        }
         return panel;
     };
 
@@ -240,58 +243,68 @@
                 await waitForElement('.el-table__body');
                 log('课程表格加载完成');
 
-                // 创建统一风格的容器
-                const container = document.createElement('div');
-                container.id = 'auto-learner-container';
-                container.style.position = 'fixed';
-                container.style.bottom = '20px';
-                container.style.left = '20px';
-                container.style.zIndex = '99999';
-                container.style.width = '320px';
-                container.style.display = 'flex';
-                container.style.flexDirection = 'column';
-                container.style.gap = '10px';
-                document.body.appendChild(container);
+                // 检查容器是否已存在
+                let container = document.getElementById('auto-learner-container');
+                if (!container) {
+                    container = document.createElement('div');
+                    container.id = 'auto-learner-container';
+                    container.style.position = 'fixed';
+                    container.style.bottom = '20px';
+                    container.style.left = '20px';
+                    container.style.zIndex = '99999';
+                    container.style.width = '320px';
+                    container.style.display = 'flex';
+                    container.style.flexDirection = 'column';
+                    container.style.gap = '10px';
+                    document.body.appendChild(container);
+                }
 
-                // 创建日志面板
-                const logPanel = document.createElement('div');
-                logPanel.id = 'auto-learner-log-panel';
-                logPanel.style.backgroundColor = 'rgba(0,0,0,0.85)';
-                logPanel.style.color = '#fff';
-                logPanel.style.padding = '10px';
-                logPanel.style.borderRadius = '5px';
-                logPanel.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-                logPanel.style.maxHeight = '150px';
-                logPanel.style.overflow = 'auto';
-                logPanel.style.fontFamily = 'Consolas, Monaco, monospace';
-                logPanel.style.fontSize = '12px';
-                logPanel.style.lineHeight = '1.5';
-                container.appendChild(logPanel);
+                // 使用createLogPanel创建日志面板
+                const logPanel = createLogPanel();
+                if (!logPanel.parentNode) {
+                    logPanel.style.backgroundColor = 'rgba(0,0,0,0.85)';
+                    logPanel.style.color = '#fff';
+                    logPanel.style.padding = '10px';
+                    logPanel.style.borderRadius = '5px';
+                    logPanel.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+                    logPanel.style.maxHeight = '150px';
+                    logPanel.style.overflow = 'auto';
+                    logPanel.style.fontFamily = 'Consolas, Monaco, monospace';
+                    logPanel.style.fontSize = '12px';
+                    logPanel.style.lineHeight = '1.5';
+                    container.appendChild(logPanel);
+                }
 
-                // 创建日志切换按钮
-                const logToggle = document.createElement('div');
-                logToggle.id = 'auto-learner-log-toggle';
-                logToggle.textContent = '隐藏日志 ▲';
-                logToggle.style.cursor = 'pointer';
-                logToggle.style.textAlign = 'center';
-                logToggle.style.padding = '5px';
-                logToggle.style.backgroundColor = 'rgba(0,0,0,0.7)';
-                logToggle.style.color = '#fff';
-                logToggle.style.borderRadius = '5px';
-                logToggle.onclick = () => {
-                    logPanel.style.display = logPanel.style.display === 'none' ? 'block' : 'none';
-                    logToggle.textContent = logPanel.style.display === 'none' ? '显示日志 ▲' : '隐藏日志 ▼';
-                };
-                container.appendChild(logToggle);
+                // 检查切换按钮是否已存在
+                let logToggle = document.getElementById('auto-learner-log-toggle');
+                if (!logToggle) {
+                    logToggle = document.createElement('div');
+                    logToggle.id = 'auto-learner-log-toggle';
+                    logToggle.textContent = '隐藏日志 ▲';
+                    logToggle.style.cursor = 'pointer';
+                    logToggle.style.textAlign = 'center';
+                    logToggle.style.padding = '5px';
+                    logToggle.style.backgroundColor = 'rgba(0,0,0,0.7)';
+                    logToggle.style.color = '#fff';
+                    logToggle.style.borderRadius = '5px';
+                    logToggle.onclick = () => {
+                        logPanel.style.display = logPanel.style.display === 'none' ? 'block' : 'none';
+                        logToggle.textContent = logPanel.style.display === 'none' ? '显示日志 ▲' : '隐藏日志 ▼';
+                    };
+                    container.appendChild(logToggle);
+                }
 
-                // 创建进度条容器
-                const progressContainer = document.createElement('div');
-                progressContainer.id = 'auto-learner-progress-container';
-                progressContainer.style.backgroundColor = 'rgba(255,255,255,0.9)';
-                progressContainer.style.padding = '10px';
-                progressContainer.style.borderRadius = '5px';
-                progressContainer.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
-                container.appendChild(progressContainer);
+                // 检查进度条容器是否已存在
+                let progressContainer = document.getElementById('auto-learner-progress-container');
+                if (!progressContainer) {
+                    progressContainer = document.createElement('div');
+                    progressContainer.id = 'auto-learner-progress-container';
+                    progressContainer.style.backgroundColor = 'rgba(255,255,255,0.9)';
+                    progressContainer.style.padding = '10px';
+                    progressContainer.style.borderRadius = '5px';
+                    progressContainer.style.boxShadow = '0 2px 10px rgba(0,0,0,0.2)';
+                    container.appendChild(progressContainer);
+                }
 
                 // 添加初始等待和提示
                 showAlert('脚本将在5秒后开始处理课程', 'info');
@@ -385,8 +398,6 @@
                         }
                         return;
                     }
-                } else {
-                    progressContainer.innerHTML = '<div style="color: #4CAF50; font-weight: bold;">所有课程已完成</div>';
                 }
 
                 // 严格检查当前页所有课程是否完成
@@ -415,14 +426,16 @@
                         retryCount = 0; // 重置重试计数
                         continue;
                     }
+
+                    // 只有当前页所有课程完成且没有下一页时，才显示完成信息
+                    progressContainer.innerHTML = '<div style="color: #4CAF50; font-weight: bold;">所有课程已完成</div>';
+                    log('所有课程已完成');
+                    showAlert('所有课程已完成', 'success');
+                    return;
                 } catch (error) {
                     log(`翻页失败: ${error.message}`, 'error');
                     throw error;
                 }
-
-                log('所有课程已完成或没有更多页面');
-                showAlert('所有课程已完成', 'success');
-                return;
             } catch (error) {
                 retryCount++;
                 log(`处理出错 (${retryCount}/${maxRetries}): ${error.message}`, 'error');
@@ -544,35 +557,43 @@
             });
         };
 
-        // 创建日志容器
-        const container = document.createElement('div');
-        container.id = 'auto-learner-container';
-        container.style.position = 'fixed';
-        container.style.bottom = '20px';
-        container.style.left = '20px';
-        container.style.zIndex = '99999';
-        container.style.width = '320px';
-        document.body.appendChild(container);
+        // 检查容器是否已存在
+        let container = document.getElementById('auto-learner-container');
+        if (!container) {
+            container = document.createElement('div');
+            container.id = 'auto-learner-container';
+            container.style.position = 'fixed';
+            container.style.bottom = '20px';
+            container.style.left = '20px';
+            container.style.zIndex = '99999';
+            container.style.width = '320px';
+            document.body.appendChild(container);
+        }
 
-        // 创建日志面板
+        // 使用createLogPanel创建日志面板
         const logPanel = createLogPanel();
-        container.appendChild(logPanel);
+        if (!logPanel.parentNode) {
+            container.appendChild(logPanel);
+        }
 
-        // 创建日志切换按钮
-        const logToggle = document.createElement('div');
-        logToggle.id = 'auto-learner-log-toggle';
-        logToggle.textContent = '隐藏日志 ▲';
-        logToggle.style.cursor = 'pointer';
-        logToggle.style.textAlign = 'center';
-        logToggle.style.padding = '5px';
-        logToggle.style.backgroundColor = 'rgba(0,0,0,0.7)';
-        logToggle.style.color = '#fff';
-        logToggle.style.borderRadius = '5px';
-        logToggle.onclick = () => {
-            logPanel.style.display = logPanel.style.display === 'none' ? 'block' : 'none';
-            logToggle.textContent = logPanel.style.display === 'none' ? '显示日志 ▲' : '隐藏日志 ▼';
-        };
-        container.appendChild(logToggle);
+        // 检查切换按钮是否已存在
+        let logToggle = document.getElementById('auto-learner-log-toggle');
+        if (!logToggle) {
+            logToggle = document.createElement('div');
+            logToggle.id = 'auto-learner-log-toggle';
+            logToggle.textContent = '隐藏日志 ▲';
+            logToggle.style.cursor = 'pointer';
+            logToggle.style.textAlign = 'center';
+            logToggle.style.padding = '5px';
+            logToggle.style.backgroundColor = 'rgba(0,0,0,0.7)';
+            logToggle.style.color = '#fff';
+            logToggle.style.borderRadius = '5px';
+            logToggle.onclick = () => {
+                logPanel.style.display = logPanel.style.display === 'none' ? 'block' : 'none';
+                logToggle.textContent = logPanel.style.display === 'none' ? '显示日志 ▲' : '隐藏日志 ▼';
+            };
+            container.appendChild(logToggle);
+        }
 
         try {
             await waitForElement('#video-Player');
