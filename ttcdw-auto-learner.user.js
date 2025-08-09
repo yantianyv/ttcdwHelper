@@ -37,21 +37,87 @@
     const showAlert = (message, type = 'error') => {
         const alertId = 'auto-learner-alert-' + Date.now();
         GM_addStyle(`
-            #${alertId} {
-                position: fixed;
-                top: 20px;
-                left: 50%;
-                transform: translateX(-50%);
-                padding: 15px 20px;
-                background: ${type === 'error' ? '#ffebee' : '#e8f5e9'};
-                color: ${type === 'error' ? '#c62828' : '#2e7d32'};
-                border: 1px solid ${type === 'error' ? '#ef9a9a' : '#a5d6a7'};
-                border-radius: 4px;
-                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-                z-index: 99999;
-                max-width: 80%;
-                text-align: center;
-            }
+                            #${alertId} {
+                                position: fixed;
+                                top: 20px;
+                                left: 50%;
+                                transform: translateX(-50%);
+                                padding: 15px 20px;
+                                background: ${type === 'error' ? '#ffebee' : '#e8f5e9'};
+                                color: ${type === 'error' ? '#c62828' : '#2e7d32'};
+                                border: 1px solid ${type === 'error' ? '#ef9a9a' : '#a5d6a7'};
+                                border-radius: 4px;
+                                box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+                                z-index: 99999;
+                                max-width: 80%;
+                                text-align: center;
+                            }
+                            /* 新增炫酷进度条样式 */
+                            .cool-progress-bar {
+                                height: 100%;
+                                background: linear-gradient(90deg, #4CAF50, #8BC34A);
+                                border-radius: 10px;
+                                box-shadow: 0 0 10px rgba(76, 175, 80, 0.5);
+                                position: relative;
+                                overflow: hidden;
+                                transition: width 0.5s ease;
+                            }
+                            .cool-progress-bar::after {
+                                content: '';
+                                position: absolute;
+                                top: 0;
+                                left: 0;
+                                right: 0;
+                                bottom: 0;
+                                background: linear-gradient(
+                                    90deg,
+                                    rgba(255, 255, 255, 0) 0%,
+                                    rgba(255, 255, 255, 0.3) 50%,
+                                    rgba(255, 255, 255, 0) 100%
+                                );
+                                animation: shine 2s infinite;
+                            }
+                            @keyframes shine {
+                                0% { transform: translateX(-100%); }
+                                100% { transform: translateX(100%); }
+                            }
+                            /* 倒计时样式 */
+                            .countdown {
+                                font-size: 24px;
+                                font-weight: bold;
+                                color: #FF5722;
+                                text-align: center;
+                                text-shadow: 0 0 5px rgba(255, 87, 34, 0.5);
+                                animation: pulse 1s infinite alternate;
+                            }
+                            @keyframes pulse {
+                                from { transform: scale(1); }
+                                to { transform: scale(1.1); }
+                            }
+                            /* 当前课程的进度条样式 */
+                            .current-course .el-progress-bar__inner {
+                                background: linear-gradient(90deg, #4CAF50, #8BC34A) !important;
+                                border-radius: 10px !important;
+                                box-shadow: 0 0 5px rgba(76, 175, 80, 0.5) !important;
+                                position: relative !important;
+                                overflow: hidden !important;
+                                transition: width 0.5s ease !important;
+                            }
+                            .current-course .el-progress-bar__inner::after {
+                                content: '' !important;
+                                position: absolute !important;
+                                top: 0 !important;
+                                left: 0 !important;
+                                right: 0 !important;
+                                bottom: 0 !important;
+                                background: linear-gradient(
+                                    90deg,
+                                    rgba(255, 255, 255, 0) 0%,
+                                    rgba(255, 255, 255, 0.3) 50%,
+                                    rgba(255, 255, 255, 0) 100%
+                                ) !important;
+                                animation: shine 2s infinite !important;
+                            }
             #auto-learner-container {
                 z-index: 99999;
             }
@@ -322,7 +388,13 @@
                     });
 
                 if (unfinishedCourses.length > 0) {
+                    // 移除之前可能存在的current-course类
+                    document.querySelectorAll('.el-table__row.current-course').forEach(row => {
+                        row.classList.remove('current-course');
+                    });
+                    
                     const course = unfinishedCourses[0];
+                    course.classList.add('current-course'); // 标记当前课程
                     const courseName = course.querySelector('.course-name')?.textContent || '未知课程';
                     const duration = course.querySelector('div[data-v-318a99d9]')?.textContent?.trim() || '未知时长';
                     const progress = course.querySelector('.el-progress__text')?.textContent || '0%';
@@ -345,9 +417,9 @@
                         progressContainer.innerHTML = `
                             <div style="margin-bottom: 5px; font-weight: bold;">${courseName}</div>
                             <div id="remaining-time" style="margin-bottom: 5px;">剩余时间: ${Math.floor(remainingSeconds / 60)}分${remainingSeconds % 60}秒</div>
-                            <div style="width: 300px; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden;">
-                                <div id="progress-bar" style="height: 100%; width: ${progressPercent * 100}%; background: #4CAF50; 
-                                    display: flex; align-items: center; justify-content: center; color: white; font-size: 12px;">
+                            <div style="width: 300px; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; position: relative;">
+                                <div id="progress-bar" class="cool-progress-bar" style="width: ${progressPercent * 100}%; 
+                                    display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">
                                     ${progress}
                                 </div>
                             </div>
@@ -366,17 +438,61 @@
                                 progressBar.style.width = '100%';
                                 progressBar.textContent = '100%';
                                 remainingTimeEl.textContent = '剩余时间: 0分0秒';
-                                return;
-                            }
 
-                            const elapsed = now - startTime;
-                            const newProgress = progressPercent + (elapsed / (remainingSeconds * 1000)) * (1 - progressPercent);
-                            const newRemaining = Math.max(0, remainingSeconds - Math.floor(elapsed / 1000));
+                                    // 启动60秒倒计时
+                                    progressContainer.innerHTML = `
+                                        <div style="margin-bottom: 10px; font-weight: bold; font-size: 16px; color: #FF5722;">${courseName}</div>
+                                        <div class="countdown" id="countdown-timer" style="font-size: 28px; margin-bottom: 15px;">60</div>
+                                        <div style="display: flex; justify-content: center; margin-bottom: 10px;">
+                                            <div style="width: 300px; height: 30px; background: #f0f0f0; border-radius: 15px; overflow: hidden; box-shadow: 0 0 10px rgba(255,87,34,0.3);">
+                                                <div class="cool-progress-bar" style="width: 100%; background: linear-gradient(90deg, #FF5722, #FF9800); 
+                                                    display: flex; align-items: center; justify-content: center; color: white; font-size: 14px; font-weight: bold;">
+                                                    已完成!
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div style="text-align: center; color: #888; font-size: 12px;">倒计时结束后将自动刷新页面</div>
+                                    `;
 
-                            progressBar.style.width = `${newProgress * 100}%`;
-                            progressBar.textContent = `${Math.round(newProgress * 100)}%`;
-                            remainingTimeEl.textContent = `剩余时间: ${Math.floor(newRemaining / 60)}分${newRemaining % 60}秒`;
-                        }, 1000);
+                                    let countdown = 60;
+                                    const countdownEl = document.getElementById('countdown-timer');
+                                    const countdownInterval = setInterval(() => {
+                                        countdown--;
+                                        countdownEl.textContent = countdown;
+                                        countdownEl.style.color = countdown <= 10 ? '#FF0000' : '#FF5722';
+                                        countdownEl.style.textShadow = countdown <= 10 ? '0 0 10px rgba(255,0,0,0.7)' : '0 0 5px rgba(255,87,34,0.5)';
+                                        countdownEl.style.transform = countdown <= 10 ? 'scale(1.2)' : 'scale(1)';
+
+                                        if (countdown <= 0) {
+                                            clearInterval(countdownInterval);
+                                            countdownEl.textContent = '正在刷新...';
+                                            location.reload();
+                                        }
+                                    }, 1000);
+                                    return;
+                                }
+
+                                const elapsed = now - startTime;
+                                const newProgress = progressPercent + (elapsed / (remainingSeconds * 1000)) * (1 - progressPercent);
+                                const newRemaining = Math.max(0, remainingSeconds - Math.floor(elapsed / 1000));
+
+                                progressBar.style.width = `${newProgress * 100}%`;
+                                progressBar.textContent = `${Math.round(newProgress * 100)}%`;
+                                remainingTimeEl.textContent = `剩余时间: ${Math.floor(newRemaining / 60)}分${newRemaining % 60}秒`;
+                                
+                                // 同步更新原生进度条
+                                const currentCourse = document.querySelector('.el-table__row.current-course');
+                                if (currentCourse) {
+                                    const nativeProgress = currentCourse.querySelector('.el-progress-bar__inner');
+                                    if (nativeProgress) {
+                                        nativeProgress.style.width = `${newProgress * 100}%`;
+                                    }
+                                    const nativeProgressText = currentCourse.querySelector('.el-progress__text');
+                                    if (nativeProgressText) {
+                                        nativeProgressText.textContent = `${Math.round(newProgress * 100)}%`;
+                                    }
+                                }
+                            }, 1000);
                     }
 
                     const studyBtn = course.querySelector('.study-btn');
