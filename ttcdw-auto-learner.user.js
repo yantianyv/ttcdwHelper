@@ -304,10 +304,44 @@
         let retryCount = 0;
         const maxRetries = 3;
 
+        // 调试日志：检查时长元素是否存在
+        const debugTimeElements = () => {
+            const timeDisplay = document.querySelector('.col-1 span[data-v-318a99d9]:nth-child(2)');
+            const maxTimeDisplay = document.querySelector('.col-1 span[data-v-318a99d9]:first-child');
+            log(`调试信息 - 时长元素: ${timeDisplay ? '找到' : '未找到'}, 最大时长元素: ${maxTimeDisplay ? '找到' : '未找到'}`);
+            if (timeDisplay) log(`当前时长: ${timeDisplay.textContent}`);
+            if (maxTimeDisplay) log(`最大时长: ${maxTimeDisplay.textContent}`);
+        };
+
+        // 更新学习时长函数
+        const updateStudyTime = () => {
+            try {
+                const timeDisplay = document.querySelector('.col-1 span[data-v-318a99d9]:nth-child(2)');
+                const maxTimeDisplay = document.querySelector('.col-1 span[data-v-318a99d9]:first-child');
+                
+                if (timeDisplay && maxTimeDisplay) {
+                    const currentMinutes = parseInt(timeDisplay.textContent) || 0;
+                    const maxMinutes = parseInt(maxTimeDisplay.textContent) || 2000;
+                    const newMinutes = Math.min(currentMinutes + 1, maxMinutes);
+                    timeDisplay.textContent = newMinutes.toString();
+                    log(`成功更新学习时长: ${newMinutes}/${maxMinutes}分钟`);
+                    return true;
+                }
+                log('未能找到时长元素');
+            } catch (error) {
+                log(`更新学习时长失败: ${error.message}`, 'error');
+            }
+            return false;
+        };
+
+        // 不再提前启动定时更新
+        log('准备检查课程列表');
+
         while (retryCount < maxRetries) {
             try {
                 await waitForElement('.el-table__body');
                 log('课程表格加载完成');
+                debugTimeElements(); // 初始检查
 
                 // 检查容器是否已存在
                 let container = document.getElementById('auto-learner-container');
@@ -499,6 +533,20 @@
                     if (studyBtn) {
                         studyBtn.click();
                         log('已点击学习按钮');
+
+                        // 延迟10秒后开始计时
+                        await delay(10000);
+                        log('开始学习时长计时');
+                        if (window.studyTimeInterval) {
+                            clearInterval(window.studyTimeInterval);
+                        }
+                        window.studyTimeInterval = setInterval(updateStudyTime, 60000);
+                        // 添加页面卸载时的清理
+                        window.addEventListener('beforeunload', () => {
+                            if (window.studyTimeInterval) {
+                                clearInterval(window.studyTimeInterval);
+                            }
+                        });
                         
                         if (remainingSeconds > 0) {
                             // 等待课程剩余时长
@@ -507,6 +555,7 @@
                             
                             // 刷新页面
                             log('课程时长等待完成，刷新页面');
+                            clearInterval(window.studyTimeInterval);
                             location.reload();
                         } else {
                             log('无需等待，立即刷新');
@@ -547,6 +596,7 @@
                     progressContainer.innerHTML = '<div style="color: #4CAF50; font-weight: bold;">所有课程已完成</div>';
                     log('所有课程已完成');
                     showAlert('所有课程已完成', 'success');
+                    clearInterval(updateInterval); // 停止定时更新
                     return;
                 } catch (error) {
                     log(`翻页失败: ${error.message}`, 'error');
@@ -718,6 +768,8 @@
             let errorCount = 0;
             const maxErrors = 3;
             let isMuted = false; // 静音状态标志
+            let lastUpdateTime = 0; // 上次更新时间戳
+
 
             // 增强型视频结束检测机制
             let currentVideoHandled = false;
@@ -788,6 +840,9 @@
                         const confirmProgressBar = await waitForElement('.xgplayer-progress-played', 1000).catch(() => null);
                         const confirmPlaybackProgress = confirmProgressBar ? parseFloat(confirmProgressBar.style.width) : 0;
                         
+                        // 更新学习时长
+                        await updateStudyTime();
+
                         if (confirmReplayBtn && confirmPlaybackProgress > 95 && !isPlaying) {
                             clearInterval(checkInterval);
                             log('视频确认播放完毕，进度: ' + confirmPlaybackProgress + '%');
