@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         TTCDW Auto Learner
+// @name         学习公社云自动播放
 // @namespace    http://tampermonkey.net/
 // @version      0.2
 // @description  自动学习网课，完成未完成章节
-// @author       Cline
+// @author       yantianyv
 // @match        https://www.ttcdw.cn/p/uc/myClassroom/*
 // @match        https://www.ttcdw.cn/p/course/v/*
 // @grant        GM_setValue
@@ -23,10 +23,10 @@
         const logEntry = `${timestamp} [${type}] ${message}`;
         console.log(logEntry);
 
-        // 保存最近的50条日志
+        // 保存最近的100条日志
         const logs = GM_getValue('logs', []);
         logs.push(logEntry);
-        if (logs.length > 50) logs.shift();
+        if (logs.length > 100) logs.shift();
         GM_setValue('logs', logs);
 
         // 更新日志面板
@@ -251,25 +251,6 @@
         });
     };
 
-    // 工具函数：等待新标签页打开
-    const waitForNewTab = (timeout = 5000) => {
-        return new Promise((resolve) => {
-            const originalTabs = window.performance.getEntriesByType("navigation");
-            const startTime = Date.now();
-            const check = () => {
-                const currentTabs = window.performance.getEntriesByType("navigation");
-                if (currentTabs.length > originalTabs.length) {
-                    resolve();
-                } else if (Date.now() - startTime >= timeout) {
-                    reject(new Error('未检测到新标签页'));
-                } else {
-                    setTimeout(check, 200);
-                }
-            };
-            check();
-        });
-    };
-
     // 工具函数：安全点击元素
     const safeClick = async (selector) => {
         const element = await waitForClickableElement(selector);
@@ -313,11 +294,10 @@
                 if (timeDisplay && maxTimeDisplay) {
                     const currentMinutes = parseFloat(timeDisplay.textContent) || 0;
                     const maxMinutes = parseFloat(maxTimeDisplay.textContent) || 2000;
-                    const newMinutes = Math.min(parseFloat((currentMinutes + 0.1).toFixed(1)), maxMinutes);
+                    const newMinutes = Math.min(parseFloat((currentMinutes + 0.01).toFixed(2)), maxMinutes);
                     const integerPart = Math.floor(newMinutes);
-                    const decimalPart = (newMinutes - integerPart).toFixed(1).substring(1);
-                    timeDisplay.innerHTML = `${integerPart}<span style="color: #86a6adff; font-size: 0.8em; box-sizing: border-box; display: inline; float: none; line-height: 20px; position: static; z-index: auto;">${decimalPart}</span>`;
-                    // log(`成功更新学习时长: ${newMinutes}/${maxMinutes}分钟`);
+                    const decimalPart = (newMinutes - integerPart).toFixed(2).substring(2);
+                    timeDisplay.innerHTML = `${integerPart}<span style="color: #86a6adff; font-size: 0.8em; box-sizing: border-box; display: inline; float: none; line-height: 20px; position: static; z-index: auto;">.${decimalPart}</span>`;
                     return true;
                 }
                 log('未能找到时长元素');
@@ -327,7 +307,6 @@
             return false;
         };
 
-        // 不再提前启动定时更新
         log('准备检查课程列表');
 
         while (retryCount < maxRetries) {
@@ -400,7 +379,7 @@
 
                 // 添加初始等待和提示
                 showAlert('脚本正在初始化', 'info');
-                await delay(1000);
+                await delay(500);
 
                 // 检查未完成课程
                 const unfinishedCourses = Array.from(document.querySelectorAll('.el-table__row'))
@@ -532,7 +511,7 @@
                         if (window.studyTimeInterval) {
                             clearInterval(window.studyTimeInterval);
                         }
-                        window.studyTimeInterval = setInterval(updateStudyTime, 6000);
+                        window.studyTimeInterval = setInterval(updateStudyTime, 600);
                         // 添加页面卸载时的清理
                         window.addEventListener('beforeunload', () => {
                             if (window.studyTimeInterval) {
@@ -760,8 +739,6 @@
             let errorCount = 0;
             const maxErrors = 3;
             let isMuted = false; // 静音状态标志
-            let lastUpdateTime = 0; // 上次更新时间戳
-
 
             // 增强型视频结束检测机制
             let currentVideoHandled = false;
@@ -798,24 +775,24 @@
                         if (switchToNextVideo()) {
                             log('检测到100%视频，已切换到下一个视频');
                             currentVideoHandled = true;
+                            isMuted = false; 
                         }
                     } else if (videoListProgress < 1) {
                         currentVideoHandled = false; // 重置标记
                     }
                     
-                    // 3. 检查重播按钮
-                    const replayBtn = await waitForElement('.xgplayer-replay', 1000).catch(() => null);
-                    
-                    // 2. 检查播放进度
+                    // 检查播放进度
                     const progressBar = await waitForElement('.xgplayer-progress-played', 1000).catch(() => null);
                     const playbackProgress = progressBar ? parseFloat(progressBar.style.width) : 0;
                     
-                    // 3. 检查播放状态
+                    // 检查播放状态
                     const isPlaying = !document.querySelector('.xgplayer-pause');
 
+
+                    
                     // 自动静音检查
                     if (!isMuted) {
-                        const muteBtn = await waitForElement('.xgplayer-icon-large', 1000).catch(() => null);
+                        const muteBtn = await waitForElement('.xgplayer-icon-large', 5000).catch(() => null);
                         if (muteBtn) {
                             muteBtn.click();
                             log('已自动静音');
@@ -823,30 +800,7 @@
                         }
                     }
                     
-                    if (replayBtn && playbackProgress > 95) {
-                        log('检测到重播按钮且进度>95%，等待10秒后二次确认...');
-                        await delay(10000);
-                        
-                        // 二次确认
-                        const confirmReplayBtn = await waitForElement('.xgplayer-replay', 1000).catch(() => null);
-                        const confirmProgressBar = await waitForElement('.xgplayer-progress-played', 1000).catch(() => null);
-                        const confirmPlaybackProgress = confirmProgressBar ? parseFloat(confirmProgressBar.style.width) : 0;
-                        
-                        // 更新学习时长
-                        await updateStudyTime();
-
-                        if (confirmReplayBtn && confirmPlaybackProgress > 95 && !isPlaying) {
-                            clearInterval(checkInterval);
-                            log('视频确认播放完毕，进度: ' + confirmPlaybackProgress + '%');
-                            try {
-                                window.close();
-                            } catch (e) {
-                                window.history.back();
-                            }
-                        } else {
-                            log('二次确认未通过，继续监测');
-                        }
-                    } else if (!isPlaying && playbackProgress < 100) {
+                    if (!isPlaying && playbackProgress < 100) {
                         // 异常情况：视频暂停但进度不足
                         log('检测到异常状态：视频暂停但进度不足(' + playbackProgress + '%)');
                         const playBtn = await waitForClickableElement('.xgplayer-play').catch(() => null);
