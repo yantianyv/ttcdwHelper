@@ -373,8 +373,8 @@
                 }
 
                 // 添加初始等待和提示
-                showAlert('脚本将在5秒后开始处理课程', 'info');
-                await delay(5000);
+                showAlert('脚本正在初始化', 'info');
+                await delay(1000);
 
                 // 检查未完成课程
                 const unfinishedCourses = Array.from(document.querySelectorAll('.el-table__row'))
@@ -416,10 +416,10 @@
                         // 创建动态进度条
                         progressContainer.innerHTML = `
                             <div style="margin-bottom: 5px; font-weight: bold;">${courseName}</div>
-                            <div id="remaining-time" style="margin-bottom: 5px;">剩余时间: ${Math.floor(remainingSeconds / 60)}分${remainingSeconds % 60}秒</div>
-                            <div style="width: 300px; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; position: relative;">
-                                <div id="progress-bar" class="cool-progress-bar" style="width: ${progressPercent * 100}%; 
-                                    display: flex; align-items: center; justify-content: center; color: white; font-size: 12px; font-weight: bold;">
+                            <div id="remaining-time" style="margin-bottom: 5px;">剩余时间: ${Math.floor(remainingSeconds / 60)}分${remainingSeconds % 60}秒（预估）</div>
+                            <div style="width: 300px; height: 20px; background: #f0f0f0; border-radius: 10px; overflow: hidden; position: relative; display: flex; align-items: center;">
+                                <div id="progress-bar" class="cool-progress-bar" style="width: ${progressPercent * 100}%; height: 100%;"></div>
+                                <div id="progress-text" style="position: absolute; right: 10px; font-size: 12px; font-weight: bold; color: #333;">
                                     ${progress}
                                 </div>
                             </div>
@@ -477,8 +477,8 @@
                                 const newRemaining = Math.max(0, remainingSeconds - Math.floor(elapsed / 1000));
 
                                 progressBar.style.width = `${newProgress * 100}%`;
-                                progressBar.textContent = `${Math.round(newProgress * 100)}%`;
-                                remainingTimeEl.textContent = `剩余时间: ${Math.floor(newRemaining / 60)}分${newRemaining % 60}秒`;
+                                document.getElementById('progress-text').textContent = `${Math.round(newProgress * 100)}%`;
+                            remainingTimeEl.textContent = `剩余时间: ${Math.floor(newRemaining / 60)}分${newRemaining % 60}秒（预估）`;
                                 
                                 // 同步更新原生进度条
                                 const currentCourse = document.querySelector('.el-table__row.current-course');
@@ -799,7 +799,7 @@
                         } else {
                             log('二次确认未通过，继续监测');
                         }
-                    } else if (!isPlaying && playbackProgress < 95) {
+                    } else if (!isPlaying && playbackProgress < 100) {
                         // 异常情况：视频暂停但进度不足
                         log('检测到异常状态：视频暂停但进度不足(' + playbackProgress + '%)');
                         const playBtn = await waitForClickableElement('.xgplayer-play').catch(() => null);
