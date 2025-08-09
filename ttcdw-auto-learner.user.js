@@ -304,15 +304,6 @@
         let retryCount = 0;
         const maxRetries = 3;
 
-        // 调试日志：检查时长元素是否存在
-        const debugTimeElements = () => {
-            const timeDisplay = document.querySelector('.col-1 span[data-v-318a99d9]:nth-child(2)');
-            const maxTimeDisplay = document.querySelector('.col-1 span[data-v-318a99d9]:first-child');
-            log(`调试信息 - 时长元素: ${timeDisplay ? '找到' : '未找到'}, 最大时长元素: ${maxTimeDisplay ? '找到' : '未找到'}`);
-            if (timeDisplay) log(`当前时长: ${timeDisplay.textContent}`);
-            if (maxTimeDisplay) log(`最大时长: ${maxTimeDisplay.textContent}`);
-        };
-
         // 更新学习时长函数
         const updateStudyTime = () => {
             try {
@@ -320,11 +311,13 @@
                 const maxTimeDisplay = document.querySelector('.col-1 span[data-v-318a99d9]:first-child');
                 
                 if (timeDisplay && maxTimeDisplay) {
-                    const currentMinutes = parseInt(timeDisplay.textContent) || 0;
-                    const maxMinutes = parseInt(maxTimeDisplay.textContent) || 2000;
-                    const newMinutes = Math.min(currentMinutes + 1, maxMinutes);
-                    timeDisplay.textContent = newMinutes.toString();
-                    log(`成功更新学习时长: ${newMinutes}/${maxMinutes}分钟`);
+                    const currentMinutes = parseFloat(timeDisplay.textContent) || 0;
+                    const maxMinutes = parseFloat(maxTimeDisplay.textContent) || 2000;
+                    const newMinutes = Math.min(parseFloat((currentMinutes + 0.1).toFixed(1)), maxMinutes);
+                    const integerPart = Math.floor(newMinutes);
+                    const decimalPart = (newMinutes - integerPart).toFixed(1).substring(1);
+                    timeDisplay.innerHTML = `${integerPart}<span style="color: #86a6adff; font-size: 0.8em; box-sizing: border-box; display: inline; float: none; line-height: 20px; position: static; z-index: auto;">${decimalPart}</span>`;
+                    // log(`成功更新学习时长: ${newMinutes}/${maxMinutes}分钟`);
                     return true;
                 }
                 log('未能找到时长元素');
@@ -341,7 +334,6 @@
             try {
                 await waitForElement('.el-table__body');
                 log('课程表格加载完成');
-                debugTimeElements(); // 初始检查
 
                 // 检查容器是否已存在
                 let container = document.getElementById('auto-learner-container');
@@ -534,13 +526,13 @@
                         studyBtn.click();
                         log('已点击学习按钮');
 
-                        // 延迟10秒后开始计时
-                        await delay(10000);
+                        // 延迟6秒后开始计时
+                        await delay(6000);
                         log('开始学习时长计时');
                         if (window.studyTimeInterval) {
                             clearInterval(window.studyTimeInterval);
                         }
-                        window.studyTimeInterval = setInterval(updateStudyTime, 60000);
+                        window.studyTimeInterval = setInterval(updateStudyTime, 6000);
                         // 添加页面卸载时的清理
                         window.addEventListener('beforeunload', () => {
                             if (window.studyTimeInterval) {
@@ -551,7 +543,7 @@
                         if (remainingSeconds > 0) {
                             // 等待课程剩余时长
                             log(`等待课程剩余时长: ${Math.floor(remainingSeconds / 60)}分${remainingSeconds % 60}秒`);
-                            await delay((remainingSeconds + 60) * 1000);
+                            await delay((remainingSeconds + 54) * 1000);
                             
                             // 刷新页面
                             log('课程时长等待完成，刷新页面');
